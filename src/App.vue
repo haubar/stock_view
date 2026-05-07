@@ -3,7 +3,7 @@
     <header class="header">
       <div class="logo">台股<span>／</span>看盤</div>
       <div class="search-bar">
-        <input v-model="searchQuery" placeholder="輸入股票代號..." maxlength="10" @keydown.enter="doSearch" />
+        <input v-model="searchQuery" placeholder="股票代號或名稱..." maxlength="10" @keydown.enter="doSearch" />
         <button class="btn" @click="doSearch">查詢</button>
       </div>
       <div class="period-tabs">

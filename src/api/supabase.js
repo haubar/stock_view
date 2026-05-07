@@ -8,8 +8,32 @@ const headers = {
 
 /**
  * 查詢單一股票的所有歷史資料
+ * 自動判斷輸入是股號（純數字）還是股名（文字）
  */
-export async function fetchStockHistory(stockId) {
+export async function fetchStockHistory(keyword) {
+  const isId = /^\d+$/.test(keyword.trim())
+
+  // 股號：精確匹配；股名：用 ilike 模糊搜尋
+  const filter = isId
+    ? `stock_id=eq.${encodeURIComponent(keyword.trim())}`
+    : `stock_name=ilike.*${encodeURIComponent(keyword.trim())}*`
+
+  // 先找出符合的股號（名稱搜尋可能有多筆，取第一筆的 stock_id）
+  const searchUrl =
+    `${SUPABASE_URL}/rest/v1/stock_daily` +
+    `?${filter}` +
+    `&order=trade_date.desc` +
+    `&limit=1` +
+    `&select=stock_id`
+
+  const searchRes = await fetch(searchUrl, { headers })
+  if (!searchRes.ok) throw new Error(`Supabase error: ${searchRes.status}`)
+  const found = await searchRes.json()
+
+  if (!found || !found.length) return []
+
+  // 用找到的 stock_id 撈完整歷史
+  const stockId = found[0].stock_id
   const url =
     `${SUPABASE_URL}/rest/v1/stock_daily` +
     `?stock_id=eq.${encodeURIComponent(stockId)}` +
@@ -20,6 +44,7 @@ export async function fetchStockHistory(stockId) {
   if (!res.ok) throw new Error(`Supabase error: ${res.status}`)
   return res.json()
 }
+
 
 /**
  * 查詢最新一天所有股票（用於自選清單更新報價）

@@ -69,3 +69,31 @@ export async function fetchLatestPrices(stockIds) {
   })
   return Object.values(map)
 }
+
+
+/**
+ * 撈指定日期的所有預測驗證結果
+ */
+export async function fetchValidationByDate(date) {
+  const url =
+    `${SUPABASE_URL}/rest/v1/stock_validation` +
+    `?trade_date=eq.${date}` +
+    `&order=stock_id.asc` +
+    `&select=*`
+  const res = await fetch(url, { headers })
+  if (!res.ok) throw new Error(`Supabase error: ${res.status}`)
+  return res.json()
+}
+
+/**
+ * 撈所有日期的勝率統計（用於趨勢折線圖）
+ */
+export async function fetchValidationStats() {
+  const url =
+    `${SUPABASE_URL}/rest/v1/stock_validation` +
+    `?order=trade_date.asc` +
+    `&select=trade_date,short_result,mid_result,long_result,kd_result,macd_result`
+  const res = await fetch(url, { headers })
+  if (!res.ok) throw new Error(`Supabase error: ${res.status}`)
+  return res.json()
+}

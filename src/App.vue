@@ -1,6 +1,12 @@
 <template>
   <div class="app">
-    <header class="header">
+    <!-- Page tab -->
+    <div class="page-tabs">
+      <button class="ptab" :class="{ active: activePage === 'chart' }" @click="activePage = 'chart'">📈 看盤</button>
+      <button class="ptab" :class="{ active: activePage === 'validation' }" @click="activePage = 'validation'">🎯 預測驗證</button>
+    </div>
+
+    <header class="header" v-show="activePage === 'chart'">
       <div class="logo">台股<span>／</span>看盤</div>
       <div class="search-bar">
         <input v-model="searchQuery" placeholder="股票代號或名稱..." maxlength="10" @keydown.enter="doSearch" />
@@ -11,7 +17,7 @@
       </div>
     </header>
 
-    <div class="main">
+    <div class="main" v-show="activePage === 'chart'">
       <aside class="sidebar">
         <div class="sidebar-header">
           <span>自選清單</span>
@@ -79,6 +85,11 @@
       </div>
     </div>
 
+    <!-- 預測驗證頁 -->
+    <div class="page-validation" v-show="activePage === 'validation'">
+      <ValidationView v-if="activePage === 'validation'" />
+    </div>
+
     <transition name="toast">
       <div v-if="toastMsg" class="toast">{{ toastMsg }}</div>
     </transition>
@@ -91,7 +102,9 @@ import { fetchStockHistory } from './api/supabase.js'
 import { aggregateData, formatVolume, diffClass } from './utils/chart.js'
 import { useWatchlist } from './composables/useWatchlist.js'
 import { useChart } from './composables/useChart.js'
+import ValidationView from './components/ValidationView.vue'
 
+const activePage    = ref('chart')
 const searchQuery   = ref('')
 const currentStock  = ref(null)
 const currentPeriod = ref('D')
@@ -274,6 +287,12 @@ html, body, #app { height: 100%; }
 .toast { position: fixed; bottom: 24px; right: 24px; background: var(--bg3); border: 1px solid var(--border); color: var(--text); padding: 10px 18px; border-radius: 8px; font-size: 13px; z-index: 999; pointer-events: none; }
 .toast-enter-active, .toast-leave-active { transition: all .25s; }
 .toast-enter-from, .toast-leave-to { opacity: 0; transform: translateY(10px); }
+
+.page-tabs { display: flex; background: var(--bg); border-bottom: 1px solid var(--border); flex-shrink: 0; }
+.ptab { background: none; border: none; border-bottom: 3px solid transparent; color: var(--text2); padding: 10px 24px; font-size: 14px; cursor: pointer; font-family: 'Noto Sans TC', sans-serif; transition: all .15s; }
+.ptab:hover { color: var(--text); }
+.ptab.active { color: var(--accent); border-bottom-color: var(--accent); font-weight: 700; }
+.page-validation { flex: 1; overflow: hidden; display: flex; flex-direction: column; min-height: 0; }
 
 @media (max-width: 640px) {
   .sidebar { display: none; }

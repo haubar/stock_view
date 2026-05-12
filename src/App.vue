@@ -4,6 +4,8 @@
     <div class="page-tabs">
       <button class="ptab" :class="{ active: activePage === 'chart' }" @click="activePage = 'chart'">📈 看盤</button>
       <button class="ptab" :class="{ active: activePage === 'validation' }" @click="activePage = 'validation'">🎯 預測驗證</button>
+      <button class="ptab" :class="{ active: activePage === 'institution' }" @click="activePage = 'institution'">🏦 三大法人</button>
+
     </div>
 
     <header class="header" v-show="activePage === 'chart'">
@@ -89,6 +91,9 @@
     <div class="page-validation" v-show="activePage === 'validation'">
       <ValidationView v-if="activePage === 'validation'" />
     </div>
+    <div class="page-validation" v-show="activePage === 'institution'">
+      <InstitutionView v-if="activePage === 'institution'" />
+    </div>
 
     <transition name="toast">
       <div v-if="toastMsg" class="toast">{{ toastMsg }}</div>
@@ -103,6 +108,8 @@ import { aggregateData, formatVolume, diffClass } from './utils/chart.js'
 import { useWatchlist } from './composables/useWatchlist.js'
 import { useChart } from './composables/useChart.js'
 import ValidationView from './components/ValidationView.vue'
+import InstitutionView from './components/InstitutionView.vue'
+
 
 const activePage    = ref('chart')
 const searchQuery   = ref('')

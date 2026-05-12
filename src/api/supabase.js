@@ -37,7 +37,7 @@ export async function fetchStockHistory(keyword) {
   const url =
     `${SUPABASE_URL}/rest/v1/stock_daily` +
     `?stock_id=eq.${encodeURIComponent(stockId)}` +
-    `&order=trade_date.asc` +
+    `&order=trade_date.desc` +
     `&select=trade_date,stock_id,stock_name,open_price,high_price,low_price,close_price,volume,price_diff,pe_ratio`
 
   const res = await fetch(url, { headers })
@@ -91,7 +91,7 @@ export async function fetchValidationByDate(date) {
 export async function fetchValidationStats() {
   const url =
     `${SUPABASE_URL}/rest/v1/stock_validation` +
-    `?order=trade_date.asc` +
+    `?order=trade_date.desc` +
     `&select=trade_date,short_result,mid_result,long_result,kd_result,macd_result`
   const res = await fetch(url, { headers })
   if (!res.ok) throw new Error(`Supabase error: ${res.status}`)

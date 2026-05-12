@@ -167,7 +167,7 @@ function buildTrendSeries(raw) {
     push(d.macd,  r.macd_result)
   })
 
-  const dates = Object.keys(byDate).sort()
+  const dates = Object.keys(byDate).sort((a, b) => a.localeCompare(b))
   const series = { short: [], mid: [], long: [], kd: [], macd: [] }
   dates.forEach(date => {
     const d = byDate[date]

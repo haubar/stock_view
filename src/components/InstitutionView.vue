@@ -5,9 +5,7 @@
     <div class="toolbar">
       <div class="toolbar-left">
         <span class="toolbar-label">查詢日期</span>
-        <select v-model="selectedDate" @change="loadInstitution" class="date-select">
-          <option v-for="d in recentDates" :key="d.value" :value="d.value">{{ d.label }}</option>
-        </select>
+        <span class="date-badge" style="font-size:13px;">{{ apiDate || '載入中...' }}</span>
       </div>
       <div class="toolbar-right">
         <div class="search-bar">
@@ -67,7 +65,7 @@
     <div class="section" v-if="brokerStockId">
       <div class="section-header">
         <span class="section-title">🏢 {{ brokerStockId }} {{ brokerStockName }} 各券商買賣超</span>
-        <span class="date-badge">{{ selectedDate }}</span>
+        <span class="date-badge">{{ apiDate || '載入中...' }}</span>
       </div>
       <div v-if="brokerLoading" class="section-loading"><div class="spinner"></div><span>載入券商資料...</span></div>
       <div v-else-if="brokerError" class="section-error">⚠️ {{ brokerError }}</div>
@@ -134,7 +132,8 @@ function getRecentTradingDates(n = 5) {
 const PROXY = 'https://twse-proxy.kerker.workers.dev'
 
 const recentDates  = ref(getRecentTradingDates(5))
-const selectedDate = ref(recentDates.value[0].value)
+const apiDate = ref('')
+
 
 // 三大法人
 const instData    = ref([])
@@ -201,10 +200,15 @@ async function loadInstitution() {
   instData.value    = []
   try {
     // 透過你現有的 proxy
-    const url = `${PROXY}?api=T86&date=${selectedDate.value}`
+    const url = `${PROXY}?api=T86`
     const res = await fetch(url)
     if (!res.ok) throw new Error(`HTTP ${res.status}`)
     const json = await res.json()
+    if (json.date) {
+      const d = json.date  // 格式是 YYYYMMDD
+      apiDate.value = `${d.slice(0,4)}-${d.slice(4,6)}-${d.slice(6,8)}`
+    }
+
 
     // 解析欄位：外資買賣超、投信買賣超、自營商買賣超
     const fields = json.fields || json.fields9 || []
@@ -251,7 +255,7 @@ async function loadBroker() {
   brokerData.value      = []
 
   try {
-    const url = `${PROXY}?api=BHSYB8&date=${selectedDate.value}&stockNo=${kw}` 
+    const url = `${PROXY}?api=BHSYB8&stockNo=${kw}`  
 
     const res = await fetch(url)
     if (!res.ok) throw new Error(`HTTP ${res.status}`)

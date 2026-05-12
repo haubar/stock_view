@@ -251,7 +251,8 @@ async function loadBroker() {
   brokerData.value      = []
 
   try {
-    const url = `${PROXY}?api=BHSYB7&date=${selectedDate.value}&stockNo=${kw}`
+    const url = `${PROXY}?api=BHSYB8&date=${selectedDate.value}&stockNo=${kw}` 
+
     const res = await fetch(url)
     if (!res.ok) throw new Error(`HTTP ${res.status}`)
     const json = await res.json()

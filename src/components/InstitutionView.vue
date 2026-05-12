@@ -201,7 +201,7 @@ async function loadInstitution() {
   instData.value    = []
   try {
     // 透過你現有的 proxy
-    const url = `${PROXY}?api=BFIAMU&date=${selectedDate.value}`
+    const url = `${PROXY}?api=T86&date=${selectedDate.value}`
     const res = await fetch(url)
     if (!res.ok) throw new Error(`HTTP ${res.status}`)
     const json = await res.json()
@@ -211,20 +211,17 @@ async function loadInstitution() {
     const rows   = json.data   || json.data9   || []
 
     const fi = (name) => fields.indexOf(name)
-    const colId      = fi('股票代號')
-    const colName    = fi('股票名稱')
-    const colFBuy    = fi('外陸資買進股數')
-    const colFSell   = fi('外陸資賣出股數')
-    const colIBuy    = fi('投信買進股數')
-    const colISell   = fi('投信賣出股數')
-    const colDBuy    = fi('自營商買進股數')
-    const colDSell   = fi('自營商賣出股數')
+    const colId      = fi('證券代號')
+    const colName    = fi('證券名稱')
+    const colFNet    = fi('外陸資買賣超股數')   // 外資直接給買賣超
+    const colINet    = fi('投信買賣超股數')
+    const colDNet    = fi('自營商買賣超股數(合計)')
 
     instData.value = rows.map(r => {
-      const n = (v) => parseInt((r[v] || '0').toString().replace(/,/g, '')) || 0
-      const foreign = Math.round((n(colFBuy) - n(colFSell)) / 1000)
-      const invest  = Math.round((n(colIBuy) - n(colISell)) / 1000)
-      const dealer  = Math.round((n(colDBuy) - n(colDSell)) / 1000)
+      const n = (idx) => parseInt((r[idx] || '0').toString().replace(/,/g, '')) || 0
+      const foreign = Math.round(n(colFNet) / 1000)
+      const invest  = Math.round(n(colINet) / 1000)
+      const dealer  = Math.round(n(colDNet) / 1000)
       return {
         股票代號: r[colId],
         股票名稱: r[colName],

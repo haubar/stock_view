@@ -89,16 +89,56 @@
               </tr>
             </thead>
             <tbody>
-              <tr v-for="(r, idx) in sortedBrokerData" :key="r.券商代號 + idx">
+              <tr v-for="(r, idx) in sortedBrokerData" :key="r.券商代號 + idx" :class="rowHighlight(idx, r._net)">
                 <td class="rank-cell">{{ idx + 1 }}</td>
                 <td class="mono">{{ r.券商代號 }}</td>
-                <td>{{ r.券商名稱 }}</td>
+                <td>
+                  <span class="broker-link" @click="loadBrokerDetail(r.券商代號, r.券商名稱)">{{ r.券商名稱 }}</span>
+                  <span v-if="idx < 5 && r._net > 0"  class="badge-top buy">買超TOP{{ idx+1 }}</span>
+                  <span v-if="isSellTop(idx, r._net)"  class="badge-top sell">賣超TOP{{ sellRank(r) }}</span>
+                </td>
                 <td class="up mono">{{ fmtNum(r._buy) }}</td>
                 <td class="down mono">{{ fmtNum(r._sell) }}</td>
                 <td :class="numClass(r._net)" class="total-cell mono">{{ fmtNum(r._net) }}</td>
               </tr>
             </tbody>
           </table>
+          <!-- 券商操作明細 -->
+          <div class="section" v-if="brokerDetailName">
+            <div class="section-header">
+              <span class="section-title">🔍 {{ brokerDetailName }}（{{ brokerDetailId }}）今日操作明細</span>
+            </div>
+            <div v-if="brokerDetailLoading" class="section-loading">
+              <div class="spinner"></div><span>載入中...</span>
+            </div>
+            <div v-else-if="brokerDetailError" class="section-error">⚠️ {{ brokerDetailError }}</div>
+            <template v-else-if="brokerDetailData.length">
+              <div class="table-wrap">
+                <table class="data-table">
+                  <thead>
+                    <tr>
+                      <th>#</th>
+                      <th>股號</th>
+                      <th>股名</th>
+                      <th>買進(張)</th>
+                      <th>賣出(張)</th>
+                      <th>買賣超(張)</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr v-for="(r, idx) in brokerDetailData" :key="r.股票代號 + idx">
+                      <td class="rank-cell">{{ idx + 1 }}</td>
+                      <td class="id-cell">{{ r.股票代號 }}</td>
+                      <td>{{ r.股票名稱 }}</td>
+                      <td class="up mono">{{ fmtNum(r._buy) }}</td>
+                      <td class="down mono">{{ fmtNum(r._sell) }}</td>
+                      <td :class="numClass(r._net)" class="total-cell mono">{{ fmtNum(r._net) }}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </template>
+          </div>
         </div>
       </template>
     </div>
@@ -156,6 +196,12 @@ const brokerStockName = ref('')
 const brokerData     = ref([])
 const brokerLoading  = ref(false)
 const brokerError    = ref('')
+
+const brokerDetailId      = ref('')
+const brokerDetailName    = ref('')
+const brokerDetailData    = ref([])
+const brokerDetailLoading = ref(false)
+const brokerDetailError   = ref('')
 
 // ── 三大法人：排序 ──
 const sortedInstData = computed(() => {
@@ -314,6 +360,88 @@ function numClass(v) {
   return v > 0 ? 'up' : 'down'
 }
 
+// 前五買超、前五賣超標示
+function rowHighlight(idx, net) {
+  // 排序後前5買超
+  if (idx < 5 && net > 0) return 'row-buy-top'
+  // 找賣超前5（net最小的5個）
+  const sellTop5 = [...brokerData.value]
+    .filter(r => r._net < 0)
+    .sort((a, b) => a._net - b._net)
+    .slice(0, 5)
+  const isSell = sellTop5.some(r => r.券商代號 === brokerData.value[idx]?.券商代號)
+  if (isSell) return 'row-sell-top'
+  return ''
+}
+
+function isSellTop(idx, net) {
+  if (net >= 0) return false
+  const sellTop5 = [...brokerData.value]
+    .filter(r => r._net < 0)
+    .sort((a, b) => a._net - b._net)
+    .slice(0, 5)
+  return sellTop5.some(r => r.券商代號 === sortedBrokerData.value[idx]?.券商代號)
+}
+
+function sellRank(r) {
+  const sellTop5 = [...brokerData.value]
+    .filter(x => x._net < 0)
+    .sort((a, b) => a._net - b._net)
+    .slice(0, 5)
+  return sellTop5.findIndex(x => x.券商代號 === r.券商代號) + 1
+}
+
+// 點券商名稱查明細
+async function loadBrokerDetail(brokerNo, brokerName) {
+  brokerDetailId.value      = brokerNo
+  brokerDetailName.value    = brokerName
+  brokerDetailLoading.value = true
+  brokerDetailError.value   = ''
+  brokerDetailData.value    = []
+
+  try {
+    const url = `${PROXY}?api=BHSYB9&stockNo=${brokerNo}`
+    const res = await fetch(url)
+    if (!res.ok) throw new Error(`HTTP ${res.status}`)
+    const json = await res.json()
+
+    const fields = json.fields || []
+    const rows   = json.data   || []
+
+    if (!rows.length) {
+      brokerDetailError.value = '查無資料'
+      return
+    }
+
+    const fi = (name) => fields.indexOf(name)
+    const colId   = fi('股票代號')
+    const colName = fi('股票名稱')
+    const colBuy  = fi('買進股數')
+    const colSell = fi('賣出股數')
+
+    brokerDetailData.value = rows.map(r => {
+      const n = (v) => parseInt((r[v] || '0').toString().replace(/,/g, '')) || 0
+      const buy  = Math.round(n(colBuy)  / 1000)
+      const sell = Math.round(n(colSell) / 1000)
+      return {
+        股票代號: r[colId],
+        股票名稱: r[colName],
+        _buy:  buy,
+        _sell: sell,
+        _net:  buy - sell,
+      }
+    })
+    .filter(r => r._buy > 0 || r._sell > 0)
+    .sort((a, b) => b._net - a._net)
+
+  } catch(e) {
+    brokerDetailError.value = `載入失敗：${e.message}`
+    console.error(e)
+  } finally {
+    brokerDetailLoading.value = false
+  }
+}
+
 onMounted(() => { loadInstitution() })
 </script>
 
@@ -377,4 +505,14 @@ onMounted(() => { loadInstitution() })
 .up   { color: var(--red); }
 .down { color: var(--green); }
 .flat { color: var(--text2); }
+
+.broker-link { cursor: pointer; }
+.broker-link:hover { color: var(--accent); text-decoration: underline; }
+
+.badge-top { display: inline-block; font-size: 10px; padding: 1px 5px; border-radius: 3px; margin-left: 6px; font-weight: 700; }
+.badge-top.buy  { background: #ef535022; color: var(--red); }
+.badge-top.sell { background: #26a69a22; color: var(--green); }
+
+.row-buy-top  td { background: #ef535008; }
+.row-sell-top td { background: #26a69a08; }
 </style>

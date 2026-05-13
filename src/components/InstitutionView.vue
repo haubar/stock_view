@@ -154,15 +154,9 @@ async function loadInstitution() {
       apiDate.value = `${d.slice(0,4)}-${d.slice(4,6)}-${d.slice(6,8)}`
     }
 
-<<<<<<< HEAD
     const foreignMap = parseInst(rForeign, 'foreign')
     const investMap  = parseInst(rInvest,  'invest')
     const dealerMap  = parseInst(rDealer,  'dealer') 
-=======
-    const foreignMap = parseInst(rForeign)
-    const investMap  = parseInst(rInvest)
-    const dealerMap  = parseInst(rDealer)
->>>>>>> a98d2361c463e19e920d3821ec989da65414d7d2
 
     // 合併所有出現過的股號
     const allIds = new Set([

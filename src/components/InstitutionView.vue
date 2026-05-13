@@ -113,14 +113,25 @@ const sortedInstData = computed(() => {
 })
 
 // ── 解析單一 API 回傳 → Map<股號, {name, net}> ──
-function parseInst(json) {
+function parseInst(json, type) {
   const map  = {}
   const rows = json.data || []
+
   rows.forEach(r => {
-    const id  = r[1]?.toString().trim()
+    let id, net
+
+    if (type === 'dealer') {
+      // 自營商：股號在 r[0]，買賣超合計在 r[10]
+      id  = r[0]?.toString().trim()
+      net = parseInt((r[10] || '0').toString().replace(/,/g, '')) || 0
+    } else {
+      // 外資/投信：股號在 r[1]，買賣超在 r[5]
+      id  = r[1]?.toString().trim()
+      net = parseInt((r[5] || '0').toString().replace(/,/g, '')) || 0
+    }
+
     if (!id || !/^\d{4,6}$/.test(id)) return
-    const net = parseInt((r[5] || '0').toString().replace(/,/g, '')) || 0
-    map[id] = { name: r[2]?.toString().trim() || '', net: Math.round(net / 1000) }
+    map[id] = { name: (type === 'dealer' ? r[1] : r[2])?.toString().trim() || '', net: Math.round(net / 1000) }
   })
   return map
 }
@@ -143,9 +154,15 @@ async function loadInstitution() {
       apiDate.value = `${d.slice(0,4)}-${d.slice(4,6)}-${d.slice(6,8)}`
     }
 
+<<<<<<< HEAD
+    const foreignMap = parseInst(rForeign, 'foreign')
+    const investMap  = parseInst(rInvest,  'invest')
+    const dealerMap  = parseInst(rDealer,  'dealer') 
+=======
     const foreignMap = parseInst(rForeign)
     const investMap  = parseInst(rInvest)
     const dealerMap  = parseInst(rDealer)
+>>>>>>> a98d2361c463e19e920d3821ec989da65414d7d2
 
     // 合併所有出現過的股號
     const allIds = new Set([

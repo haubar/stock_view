@@ -77,6 +77,8 @@ import { ref, computed, onMounted } from 'vue'
 
 const PROXY = 'https://twse-proxy.kerker.workers.dev'
 
+const cache = {}
+
 const apiDate     = ref('')
 const instData    = ref([])
 const instLoading = ref(false)
@@ -136,6 +138,16 @@ function parseInst(json, type) {
   return map
 }
 
+// 資料暫存session，避免重複抓 API，造成loading
+async function fetchWithCache(key, url) {
+  if (cache[key]) return cache[key]
+  const res = await fetch(url)
+  if (!res.ok) throw new Error(`HTTP ${res.status}`)
+  const json = await res.json()
+  cache[key] = json
+  return json
+}
+
 // ── 抓三大法人（分三支 API 同時抓，再合併）──
 async function loadInstitution() {
   instLoading.value = true
@@ -143,9 +155,9 @@ async function loadInstitution() {
   instData.value    = []
   try {
     const [rForeign, rInvest, rDealer] = await Promise.all([
-      fetch(`${PROXY}?api=TWT38U`).then(r => r.json()), // 外資
-      fetch(`${PROXY}?api=TWT44U`).then(r => r.json()), // 投信
-      fetch(`${PROXY}?api=TWT43U`).then(r => r.json()), // 自營
+      fetchWithCache('TWT38U', `${PROXY}?api=TWT38U`),
+      fetchWithCache('TWT44U', `${PROXY}?api=TWT44U`),
+      fetchWithCache('TWT43U', `${PROXY}?api=TWT43U`),
     ])
 
     // 取日期（外資回傳）

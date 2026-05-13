@@ -4,28 +4,27 @@
     <!-- Toolbar -->
     <div class="toolbar">
       <div class="toolbar-left">
-        <span class="toolbar-label">查詢日期</span>
-        <span class="date-badge" style="font-size:13px;">{{ apiDate || '載入中...' }}</span>
+        <span class="toolbar-label">資料日期</span>
+        <span class="date-badge-lg">{{ apiDate || '載入中...' }}</span>
       </div>
       <div class="toolbar-right">
         <div class="search-bar">
-          <input v-model="brokerQuery" placeholder="輸入代號查券商明細..." maxlength="10" @keydown.enter="loadBroker" />
+          <input v-model="brokerQuery" placeholder="輸入股號查券商明細..." maxlength="10" @keydown.enter="loadBroker" />
           <button class="btn" @click="loadBroker">查券商</button>
         </div>
       </div>
     </div>
 
-    <!-- 三大法人 loading -->
+    <!-- 三大法人 -->
     <div v-if="instLoading" class="section-loading"><div class="spinner"></div><span>載入三大法人...</span></div>
     <div v-else-if="instError" class="section-error">⚠️ {{ instError }}</div>
     <template v-else-if="instData.length">
-
-      <!-- 三大法人合計排行 -->
       <div class="section">
         <div class="section-header">
           <span class="section-title">🏦 三大法人買賣超排行</span>
           <div class="sub-tabs">
-            <button v-for="t in instTabs" :key="t.value" class="stab" :class="{ active: instTab === t.value }" @click="instTab = t.value">{{ t.label }}</button>
+            <button v-for="t in instTabs" :key="t.value" class="stab"
+              :class="{ active: instTab === t.value }" @click="instTab = t.value">{{ t.label }}</button>
           </div>
           <div class="sub-tabs" style="margin-left:12px;">
             <button class="stab" :class="{ active: instSort === 'buy' }" @click="instSort='buy'">買超排行</button>
@@ -36,23 +35,21 @@
           <table class="data-table">
             <thead>
               <tr>
-                <th>#</th>
-                <th>股號</th>
-                <th>股名</th>
-                <th v-if="instTab==='all'||instTab==='foreign'">外資買超(張)</th>
-                <th v-if="instTab==='all'||instTab==='invest'">投信買超(張)</th>
-                <th v-if="instTab==='all'||instTab==='dealer'">自營商買超(張)</th>
-                <th>合計買超(張)</th>
+                <th>#</th><th>股號</th><th>股名</th>
+                <th v-if="instTab==='all'||instTab==='foreign'">外資(張)</th>
+                <th v-if="instTab==='all'||instTab==='invest'">投信(張)</th>
+                <th v-if="instTab==='all'||instTab==='dealer'">自營商(張)</th>
+                <th>合計(張)</th>
               </tr>
             </thead>
             <tbody>
               <tr v-for="(r, idx) in sortedInstData" :key="r.股票代號">
                 <td class="rank-cell">{{ idx + 1 }}</td>
-                <td class="id-cell" @click="quickBroker(r.股票代號)" style="cursor:pointer;">{{ r.股票代號 }}</td>
+                <td class="id-cell" @click="quickBroker(r.股票代號)">{{ r.股票代號 }}</td>
                 <td>{{ r.股票名稱 }}</td>
                 <td v-if="instTab==='all'||instTab==='foreign'" :class="numClass(r._foreign)">{{ fmtNum(r._foreign) }}</td>
-                <td v-if="instTab==='all'||instTab==='invest'" :class="numClass(r._invest)">{{ fmtNum(r._invest) }}</td>
-                <td v-if="instTab==='all'||instTab==='dealer'" :class="numClass(r._dealer)">{{ fmtNum(r._dealer) }}</td>
+                <td v-if="instTab==='all'||instTab==='invest'"  :class="numClass(r._invest)">{{ fmtNum(r._invest) }}</td>
+                <td v-if="instTab==='all'||instTab==='dealer'"  :class="numClass(r._dealer)">{{ fmtNum(r._dealer) }}</td>
                 <td :class="numClass(r._total)" class="total-cell">{{ fmtNum(r._total) }}</td>
               </tr>
             </tbody>
@@ -61,86 +58,15 @@
       </div>
     </template>
 
-    <!-- 券商買賣超 -->
+    <!-- 券商買賣超（目前暫不支援，等待正確API） -->
     <div class="section" v-if="brokerStockId">
       <div class="section-header">
-        <span class="section-title">🏢 {{ brokerStockId }} {{ brokerStockName }} 各券商買賣超</span>
-        <span class="date-badge">{{ apiDate || '載入中...' }}</span>
+        <span class="section-title">🏢 {{ brokerStockId }} 各券商買賣超</span>
+        <span class="date-badge">功能開發中</span>
       </div>
-      <div v-if="brokerLoading" class="section-loading"><div class="spinner"></div><span>載入券商資料...</span></div>
-      <div v-else-if="brokerError" class="section-error">⚠️ {{ brokerError }}</div>
-      <template v-else-if="brokerData.length">
-        <div class="broker-summary">
-          <div class="bsum-card" v-for="s in brokerSummary" :key="s.label">
-            <span class="bsum-label">{{ s.label }}</span>
-            <span class="bsum-val" :class="numClass(s.value)">{{ fmtNum(s.value) }} 張</span>
-          </div>
-        </div>
-        <div class="table-wrap">
-          <table class="data-table">
-            <thead>
-              <tr>
-                <th>#</th>
-                <th>券商代號</th>
-                <th>券商名稱</th>
-                <th>買進(張)</th>
-                <th>賣出(張)</th>
-                <th>買賣超(張)</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="(r, idx) in sortedBrokerData" :key="r.券商代號 + idx" :class="rowHighlight(idx, r._net)">
-                <td class="rank-cell">{{ idx + 1 }}</td>
-                <td class="mono">{{ r.券商代號 }}</td>
-                <td>
-                  <span class="broker-link" @click="loadBrokerDetail(r.券商代號, r.券商名稱)">{{ r.券商名稱 }}</span>
-                  <span v-if="idx < 5 && r._net > 0"  class="badge-top buy">買超TOP{{ idx+1 }}</span>
-                  <span v-if="isSellTop(idx, r._net)"  class="badge-top sell">賣超TOP{{ sellRank(r) }}</span>
-                </td>
-                <td class="up mono">{{ fmtNum(r._buy) }}</td>
-                <td class="down mono">{{ fmtNum(r._sell) }}</td>
-                <td :class="numClass(r._net)" class="total-cell mono">{{ fmtNum(r._net) }}</td>
-              </tr>
-            </tbody>
-          </table>
-          <!-- 券商操作明細 -->
-          <div class="section" v-if="brokerDetailName">
-            <div class="section-header">
-              <span class="section-title">🔍 {{ brokerDetailName }}（{{ brokerDetailId }}）今日操作明細</span>
-            </div>
-            <div v-if="brokerDetailLoading" class="section-loading">
-              <div class="spinner"></div><span>載入中...</span>
-            </div>
-            <div v-else-if="brokerDetailError" class="section-error">⚠️ {{ brokerDetailError }}</div>
-            <template v-else-if="brokerDetailData.length">
-              <div class="table-wrap">
-                <table class="data-table">
-                  <thead>
-                    <tr>
-                      <th>#</th>
-                      <th>股號</th>
-                      <th>股名</th>
-                      <th>買進(張)</th>
-                      <th>賣出(張)</th>
-                      <th>買賣超(張)</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr v-for="(r, idx) in brokerDetailData" :key="r.股票代號 + idx">
-                      <td class="rank-cell">{{ idx + 1 }}</td>
-                      <td class="id-cell">{{ r.股票代號 }}</td>
-                      <td>{{ r.股票名稱 }}</td>
-                      <td class="up mono">{{ fmtNum(r._buy) }}</td>
-                      <td class="down mono">{{ fmtNum(r._sell) }}</td>
-                      <td :class="numClass(r._net)" class="total-cell mono">{{ fmtNum(r._net) }}</td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-            </template>
-          </div>
-        </div>
-      </template>
+      <div class="section-error" style="color:var(--text3);">
+        ⚠️ 券商進出明細 API 端點確認中，請稍候。
+      </div>
     </div>
 
   </div>
@@ -149,38 +75,16 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 
-// ── 近5個交易日（跳過週末）──
-function getRecentTradingDates(n = 5) {
-  const dates = []
-  const d = new Date()
-  while (dates.length < n) {
-    const day = d.getDay()
-    if (day !== 0 && day !== 6) {
-      const y = d.getFullYear()
-      const m = String(d.getMonth() + 1).padStart(2, '0')
-      const dd = String(d.getDate()).padStart(2, '0')
-      dates.push({
-        value: `${y}${m}${dd}`,
-        label: `${y}-${m}-${dd}`,
-      })
-    }
-    d.setDate(d.getDate() - 1)
-  }
-  return dates
-}
-
 const PROXY = 'https://twse-proxy.kerker.workers.dev'
 
-const recentDates  = ref(getRecentTradingDates(5))
-const apiDate = ref('')
-
-
-// 三大法人
+const apiDate     = ref('')
 const instData    = ref([])
 const instLoading = ref(false)
 const instError   = ref('')
 const instTab     = ref('all')
 const instSort    = ref('buy')
+const brokerQuery   = ref('')
+const brokerStockId = ref('')
 
 const instTabs = [
   { label: '全部',   value: 'all'     },
@@ -189,25 +93,10 @@ const instTabs = [
   { label: '自營商', value: 'dealer'  },
 ]
 
-// 券商
-const brokerQuery    = ref('')
-const brokerStockId  = ref('')
-const brokerStockName = ref('')
-const brokerData     = ref([])
-const brokerLoading  = ref(false)
-const brokerError    = ref('')
-
-const brokerDetailId      = ref('')
-const brokerDetailName    = ref('')
-const brokerDetailData    = ref([])
-const brokerDetailLoading = ref(false)
-const brokerDetailError   = ref('')
-
-// ── 三大法人：排序 ──
+// ── 排序 ──
 const sortedInstData = computed(() => {
-  const data = [...instData.value]
   const sign = instSort.value === 'buy' ? -1 : 1
-  return data
+  return [...instData.value]
     .filter(r => {
       if (instTab.value === 'foreign') return r._foreign !== 0
       if (instTab.value === 'invest')  return r._invest  !== 0
@@ -223,64 +112,62 @@ const sortedInstData = computed(() => {
     .slice(0, 50)
 })
 
-// ── 券商統計 ──
-const brokerSummary = computed(() => {
-  const totalBuy  = brokerData.value.reduce((s, r) => s + r._buy,  0)
-  const totalSell = brokerData.value.reduce((s, r) => s + r._sell, 0)
-  const net = totalBuy - totalSell
-  return [
-    { label: '法人買進', value: totalBuy  },
-    { label: '法人賣出', value: -totalSell },
-    { label: '合計買超', value: net       },
-  ]
-})
+// ── 解析單一 API 回傳 → Map<股號, {name, net}> ──
+function parseInst(json) {
+  const map  = {}
+  const rows = json.data || []
+  rows.forEach(r => {
+    const id  = r[1]?.toString().trim()
+    if (!id || !/^\d{4,6}$/.test(id)) return
+    const net = parseInt((r[5] || '0').toString().replace(/,/g, '')) || 0
+    map[id] = { name: r[2]?.toString().trim() || '', net: Math.round(net / 1000) }
+  })
+  return map
+}
 
-const sortedBrokerData = computed(() => {
-  return [...brokerData.value].sort((a, b) => b._net - a._net)
-})
-
-// ── 抓三大法人 ──
+// ── 抓三大法人（分三支 API 同時抓，再合併）──
 async function loadInstitution() {
   instLoading.value = true
   instError.value   = ''
   instData.value    = []
   try {
-    // 透過你現有的 proxy
-    const url = `${PROXY}?api=T86`
-    const res = await fetch(url)
-    if (!res.ok) throw new Error(`HTTP ${res.status}`)
-    const json = await res.json()
-    if (json.date) {
-      const d = json.date  // 格式是 YYYYMMDD
+    const [rForeign, rInvest, rDealer] = await Promise.all([
+      fetch(`${PROXY}?api=TWT38U`).then(r => r.json()), // 外資
+      fetch(`${PROXY}?api=TWT44U`).then(r => r.json()), // 投信
+      fetch(`${PROXY}?api=TWT43U`).then(r => r.json()), // 自營
+    ])
+
+    // 取日期（外資回傳）
+    if (rForeign.date) {
+      const d = rForeign.date.toString()
       apiDate.value = `${d.slice(0,4)}-${d.slice(4,6)}-${d.slice(6,8)}`
     }
 
+    const foreignMap = parseInst(rForeign)
+    const investMap  = parseInst(rInvest)
+    const dealerMap  = parseInst(rDealer)
 
-    // 解析欄位：外資買賣超、投信買賣超、自營商買賣超
-    const fields = json.fields || json.fields9 || []
-    const rows   = json.data   || json.data9   || []
+    // 合併所有出現過的股號
+    const allIds = new Set([
+      ...Object.keys(foreignMap),
+      ...Object.keys(investMap),
+      ...Object.keys(dealerMap),
+    ])
 
-    const fi = (name) => fields.indexOf(name)
-    const colId      = fi('證券代號')
-    const colName    = fi('證券名稱')
-    const colFNet    = fi('外陸資買賣超股數')   // 外資直接給買賣超
-    const colINet    = fi('投信買賣超股數')
-    const colDNet    = fi('自營商買賣超股數(合計)')
-
-    instData.value = rows.map(r => {
-      const n = (idx) => parseInt((r[idx] || '0').toString().replace(/,/g, '')) || 0
-      const foreign = Math.round(n(colFNet) / 1000)
-      const invest  = Math.round(n(colINet) / 1000)
-      const dealer  = Math.round(n(colDNet) / 1000)
+    instData.value = [...allIds].map(id => {
+      const name    = foreignMap[id]?.name || investMap[id]?.name || dealerMap[id]?.name || ''
+      const foreign = foreignMap[id]?.net || 0
+      const invest  = investMap[id]?.net  || 0
+      const dealer  = dealerMap[id]?.net  || 0
       return {
-        股票代號: r[colId],
-        股票名稱: r[colName],
+        股票代號: id,
+        股票名稱: name,
         _foreign: foreign,
         _invest:  invest,
         _dealer:  dealer,
         _total:   foreign + invest + dealer,
       }
-    }).filter(r => r.股票代號 && /^\d{4}$/.test(r.股票代號.trim()))
+    })
 
   } catch(e) {
     instError.value = `三大法人載入失敗：${e.message}`
@@ -290,67 +177,17 @@ async function loadInstitution() {
   }
 }
 
-// ── 抓券商買賣超 ──
-async function loadBroker() {
+function quickBroker(id) {
+  brokerQuery.value   = id
+  brokerStockId.value = id
+}
+
+function loadBroker() {
   const kw = brokerQuery.value.trim()
   if (!kw) return
-  brokerStockId.value   = kw
-  brokerStockName.value = ''
-  brokerLoading.value   = true
-  brokerError.value     = ''
-  brokerData.value      = []
-
-  try {
-    const url = `${PROXY}?api=BHSYB8&stockNo=${kw}`  
-
-    const res = await fetch(url)
-    if (!res.ok) throw new Error(`HTTP ${res.status}`)
-    const json = await res.json()
-
-    const fields = json.fields || []
-    const rows   = json.data   || []
-
-    if (!rows.length) {
-      brokerError.value = `查無 ${kw} 的券商資料（可能非交易日或代號錯誤）`
-      return
-    }
-
-    brokerStockName.value = json.title?.match(/\d{4}\s+(.+?)\s/)?.[1] || ''
-
-    const fi = (name) => fields.indexOf(name)
-    const colCode = fi('券商代號')
-    const colName = fi('券商名稱')
-    const colBuy  = fi('買進股數')
-    const colSell = fi('賣出股數')
-
-    brokerData.value = rows.map(r => {
-      const n = (v) => parseInt((r[v] || '0').toString().replace(/,/g, '')) || 0
-      const buy  = Math.round(n(colBuy)  / 1000)
-      const sell = Math.round(n(colSell) / 1000)
-      return {
-        券商代號: r[colCode],
-        券商名稱: r[colName],
-        _buy:  buy,
-        _sell: sell,
-        _net:  buy - sell,
-      }
-    }).filter(r => r._buy > 0 || r._sell > 0)
-
-  } catch(e) {
-    brokerError.value = `券商資料載入失敗：${e.message}`
-    console.error(e)
-  } finally {
-    brokerLoading.value = false
-  }
+  brokerStockId.value = kw
 }
 
-// 從三大法人表點股號快速查券商
-function quickBroker(id) {
-  brokerQuery.value = id
-  loadBroker()
-}
-
-// ── helpers ──
 function fmtNum(v) {
   if (v === null || v === undefined) return '-'
   return v.toLocaleString()
@@ -358,88 +195,6 @@ function fmtNum(v) {
 function numClass(v) {
   if (!v) return 'flat'
   return v > 0 ? 'up' : 'down'
-}
-
-// 前五買超、前五賣超標示
-function rowHighlight(idx, net) {
-  // 排序後前5買超
-  if (idx < 5 && net > 0) return 'row-buy-top'
-  // 找賣超前5（net最小的5個）
-  const sellTop5 = [...brokerData.value]
-    .filter(r => r._net < 0)
-    .sort((a, b) => a._net - b._net)
-    .slice(0, 5)
-  const isSell = sellTop5.some(r => r.券商代號 === brokerData.value[idx]?.券商代號)
-  if (isSell) return 'row-sell-top'
-  return ''
-}
-
-function isSellTop(idx, net) {
-  if (net >= 0) return false
-  const sellTop5 = [...brokerData.value]
-    .filter(r => r._net < 0)
-    .sort((a, b) => a._net - b._net)
-    .slice(0, 5)
-  return sellTop5.some(r => r.券商代號 === sortedBrokerData.value[idx]?.券商代號)
-}
-
-function sellRank(r) {
-  const sellTop5 = [...brokerData.value]
-    .filter(x => x._net < 0)
-    .sort((a, b) => a._net - b._net)
-    .slice(0, 5)
-  return sellTop5.findIndex(x => x.券商代號 === r.券商代號) + 1
-}
-
-// 點券商名稱查明細
-async function loadBrokerDetail(brokerNo, brokerName) {
-  brokerDetailId.value      = brokerNo
-  brokerDetailName.value    = brokerName
-  brokerDetailLoading.value = true
-  brokerDetailError.value   = ''
-  brokerDetailData.value    = []
-
-  try {
-    const url = `${PROXY}?api=BHSYB9&stockNo=${brokerNo}`
-    const res = await fetch(url)
-    if (!res.ok) throw new Error(`HTTP ${res.status}`)
-    const json = await res.json()
-
-    const fields = json.fields || []
-    const rows   = json.data   || []
-
-    if (!rows.length) {
-      brokerDetailError.value = '查無資料'
-      return
-    }
-
-    const fi = (name) => fields.indexOf(name)
-    const colId   = fi('股票代號')
-    const colName = fi('股票名稱')
-    const colBuy  = fi('買進股數')
-    const colSell = fi('賣出股數')
-
-    brokerDetailData.value = rows.map(r => {
-      const n = (v) => parseInt((r[v] || '0').toString().replace(/,/g, '')) || 0
-      const buy  = Math.round(n(colBuy)  / 1000)
-      const sell = Math.round(n(colSell) / 1000)
-      return {
-        股票代號: r[colId],
-        股票名稱: r[colName],
-        _buy:  buy,
-        _sell: sell,
-        _net:  buy - sell,
-      }
-    })
-    .filter(r => r._buy > 0 || r._sell > 0)
-    .sort((a, b) => b._net - a._net)
-
-  } catch(e) {
-    brokerDetailError.value = `載入失敗：${e.message}`
-    console.error(e)
-  } finally {
-    brokerDetailLoading.value = false
-  }
 }
 
 onMounted(() => { loadInstitution() })
@@ -450,19 +205,16 @@ onMounted(() => { loadInstitution() })
 .institution::-webkit-scrollbar { width: 4px; }
 .institution::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
 
-/* Toolbar */
 .toolbar { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
 .toolbar-left, .toolbar-right { display: flex; align-items: center; gap: 10px; }
 .toolbar-label { font-size: 12px; color: var(--text3); letter-spacing: 1px; }
-.date-select { background: var(--bg3); border: 1px solid var(--border); color: var(--text); border-radius: 6px; padding: 5px 10px; font-size: 13px; font-family: 'JetBrains Mono', monospace; cursor: pointer; outline: none; }
-.date-select:focus { border-color: var(--accent); }
+.date-badge-lg { font-family: 'JetBrains Mono', monospace; font-size: 15px; color: var(--accent); font-weight: 600; }
 .search-bar { display: flex; align-items: center; gap: 8px; background: var(--bg3); border: 1px solid var(--border); border-radius: 8px; padding: 5px 10px; }
 .search-bar input { background: none; border: none; outline: none; color: var(--text); font-family: 'JetBrains Mono', monospace; font-size: 13px; width: 180px; }
 .search-bar input::placeholder { color: var(--text3); }
 .btn { background: var(--accent); color: #0d0f14; border: none; border-radius: 6px; padding: 6px 14px; font-size: 13px; font-weight: 700; cursor: pointer; white-space: nowrap; transition: opacity .15s; font-family: 'Noto Sans TC', sans-serif; }
 .btn:hover { opacity: .85; }
 
-/* Section */
 .section { background: var(--bg2); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
 .section-header { padding: 12px 16px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 .section-title { font-size: 13px; color: var(--text2); font-weight: 500; }
@@ -473,30 +225,21 @@ onMounted(() => { loadInstitution() })
 .stab.active { background: var(--accent); color: #0d0f14; border-color: var(--accent); font-weight: 700; }
 .stab:hover:not(.active) { border-color: var(--accent); color: var(--accent); }
 
-/* Table */
-.table-wrap { overflow-x: auto; max-height: 420px; overflow-y: auto; }
+.table-wrap { overflow-x: auto; max-height: 520px; overflow-y: auto; }
 .table-wrap::-webkit-scrollbar { width: 3px; height: 3px; }
 .table-wrap::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
 .data-table { width: 100%; border-collapse: collapse; font-size: 12px; }
 .data-table th { padding: 8px 12px; text-align: right; color: var(--text3); font-weight: 500; border-bottom: 1px solid var(--border); white-space: nowrap; font-size: 11px; letter-spacing: .5px; text-transform: uppercase; position: sticky; top: 0; background: var(--bg2); z-index: 1; }
-.data-table th:first-child, .data-table th:nth-child(2), .data-table th:nth-child(3) { text-align: left; }
+.data-table th:nth-child(1), .data-table th:nth-child(2), .data-table th:nth-child(3) { text-align: left; }
 .data-table td { padding: 7px 12px; border-bottom: 1px solid var(--border); white-space: nowrap; text-align: right; color: var(--text); }
-.data-table td:first-child, .data-table td:nth-child(2), .data-table td:nth-child(3) { text-align: left; }
+.data-table td:nth-child(1), .data-table td:nth-child(2), .data-table td:nth-child(3) { text-align: left; }
 .data-table tr:last-child td { border-bottom: none; }
 .data-table tr:hover td { background: var(--bg3); }
 .rank-cell { color: var(--text3); font-size: 11px; width: 30px; }
-.id-cell { font-family: 'JetBrains Mono', monospace; font-weight: 600; color: var(--accent); }
+.id-cell { font-family: 'JetBrains Mono', monospace; font-weight: 600; color: var(--accent); cursor: pointer; }
 .id-cell:hover { text-decoration: underline; }
 .total-cell { font-weight: 600; }
-.mono { font-family: 'JetBrains Mono', monospace; }
 
-/* Broker summary */
-.broker-summary { display: flex; gap: 12px; padding: 12px 16px; border-bottom: 1px solid var(--border); flex-wrap: wrap; }
-.bsum-card { display: flex; flex-direction: column; gap: 2px; }
-.bsum-label { font-size: 10px; color: var(--text3); letter-spacing: 1px; text-transform: uppercase; }
-.bsum-val { font-family: 'JetBrains Mono', monospace; font-size: 16px; font-weight: 600; }
-
-/* Loading / Error */
 .section-loading { display: flex; align-items: center; gap: 10px; padding: 24px; color: var(--text3); font-size: 13px; }
 .section-error { padding: 20px; color: #ef5350; font-size: 13px; }
 .spinner { width: 20px; height: 20px; border: 2px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin .8s linear infinite; flex-shrink: 0; }
@@ -505,14 +248,4 @@ onMounted(() => { loadInstitution() })
 .up   { color: var(--red); }
 .down { color: var(--green); }
 .flat { color: var(--text2); }
-
-.broker-link { cursor: pointer; }
-.broker-link:hover { color: var(--accent); text-decoration: underline; }
-
-.badge-top { display: inline-block; font-size: 10px; padding: 1px 5px; border-radius: 3px; margin-left: 6px; font-weight: 700; }
-.badge-top.buy  { background: #ef535022; color: var(--red); }
-.badge-top.sell { background: #26a69a22; color: var(--green); }
-
-.row-buy-top  td { background: #ef535008; }
-.row-sell-top td { background: #26a69a08; }
 </style>

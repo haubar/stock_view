@@ -38,6 +38,7 @@ export async function fetchStockHistory(keyword) {
     `${SUPABASE_URL}/rest/v1/stock_daily` +
     `?stock_id=eq.${encodeURIComponent(stockId)}` +
     `&order=trade_date.desc` +
+    `&limit=2000` +
     `&select=trade_date,stock_id,stock_name,open_price,high_price,low_price,close_price,volume,price_diff,pe_ratio`
 
   const res = await fetch(url, { headers })
